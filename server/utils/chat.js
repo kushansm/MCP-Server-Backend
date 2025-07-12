@@ -9,7 +9,7 @@ const cohere = new CohereClient({
 
 export const askAboutResume = async (resumeText, question) => {
     const response = await cohere.chat({
-        model: 'command-r-plus', // or 'command-r', depending on availability
+        model: 'command-r-plus',
         message: `Here is my resume:\n\n${resumeText}\n\nQuestion: ${question}`,
         temperature: 0.7,
         maxTokens: 300,
