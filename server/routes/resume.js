@@ -7,9 +7,18 @@ import fs from 'fs';
 
 const router = express.Router();
 
-// store uploaded resume temporarily
+// Temporary state to hold uploaded file path and extracted email
 let lastUploadedResumePath = null;
+let extractedEmailFromResume = null;
 
+//  Email extractor
+function extractEmail(text) {
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+    const matches = text.match(emailRegex);
+    return matches ? matches[0] : null;
+}
+
+// Multer setup
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         const uploadDir = 'server/uploads';
@@ -28,11 +37,25 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-router.post('/upload', upload.single('resume'), (req, res) => {
+// Upload route
+router.post('/upload', upload.single('resume'), async (req, res) => {
     if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
-    res.json({ message: 'Resume uploaded!', filename: req.file.filename });
+
+    try {
+        const resumeText = await extractTextFromPDF(lastUploadedResumePath);
+        extractedEmailFromResume = extractEmail(resumeText);
+
+        res.json({
+            message: 'Resume uploaded!',
+            filename: req.file.filename,
+            extractedEmail: extractedEmailFromResume || 'No email found in resume',
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to process resume', details: err.message });
+    }
 });
 
+// Chat route
 router.get('/chat', async (req, res) => {
     const question = req.query.q;
     if (!lastUploadedResumePath) return res.status(400).json({ error: 'No resume uploaded yet' });
@@ -47,4 +70,6 @@ router.get('/chat', async (req, res) => {
     }
 });
 
+// Export state for use in other routes
+export { extractedEmailFromResume };
 export default router;

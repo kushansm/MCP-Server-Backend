@@ -1,12 +1,13 @@
 import express from 'express';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+import { extractedEmailFromResume } from './resume.js'; //  import extracted email
 
 dotenv.config();
 
 const router = express.Router();
 
-// Create email transporter
+// Email transporter
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -15,19 +16,23 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-// POST /email
+// Send email route
 router.post('/', async (req, res) => {
     const { recipient, subject, body } = req.body;
 
-    if (!recipient || !subject || !body) {
-        return res.status(400).json({ error: 'recipient, subject, and body are required' });
+    const toEmail = recipient || extractedEmailFromResume;
+
+    if (!toEmail || !subject || !body) {
+        return res.status(400).json({
+            error: 'recipient (or extracted from resume), subject, and body are required',
+        });
     }
 
     try {
         const info = await transporter.sendMail({
             from: process.env.EMAIL_USER,
-            to: recipient,
-            subject: subject,
+            to: toEmail,
+            subject,
             text: body,
         });
 
