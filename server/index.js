@@ -10,6 +10,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get('/', (req, res) => {
+    res.send('MCP Server is up and running!');
+});
+
 app.use('/resume', resumeRouter);
 app.use('/email', emailRouter);
 
